@@ -48,9 +48,10 @@ public class OrderService {
     public Page<OrderResponse> findAllByCustomerId(Long costumerId, PageRequest pageRequest) {
         var orders = orderRepository.findAllByCostumerId(costumerId, pageRequest);
 
+        /*Convertendo entity para response */
         return orders.map(OrderResponse::fromEntity);
     }
-
+    /*Retorna o smoatório da compra do cliente */
     public BigDecimal findTotalOnOrdersByCostumerId(Long costumerId) {
         var aggregations = newAggregation(
                 match(Criteria.where("customerId").is(costumerId)),
@@ -58,18 +59,19 @@ public class OrderService {
         );
 
         var response = mongoTemplate.aggregate(aggregations, "tb_orders", Document.class);
+        /*Tenta achar a chave total,se não achar retorn 0 */
         return new BigDecimal(response.getUniqueMappedResult().get("total").toString());
+
     }
 
-    private BigDecimal getTotal(OrderCreatedEvent event) {
+    private BigDecimal getTotal(OrderCreatedEvent event){
         return event.itens().stream().map(i -> i.preco().multiply(BigDecimal.valueOf(i.quantidade()))).reduce(BigDecimal::add).orElse(BigDecimal.ZERO);
     }
-
+    
     private static List<OrderItem> getOrderItems(OrderCreatedEvent event) {
         return event.itens().stream().map(i -> new OrderItem(i.produto(), i.quantidade(), i.preco())).toList();
+
+
     }
 
-    public BigDecimal findTotalOnOrdersByCustomerId(Long costumerId) {
-        throw new UnsupportedOperationException("Unimplemented method 'findTotalOnOrdersByCustomerId'");
-    }
 }
